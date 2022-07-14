@@ -1,101 +1,72 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function App() {
-    const operators = ["/", "x", "+", "-"];
-    const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const operators = ["/", "*", "+", "-"];
+    const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
-    const [input, setInput] = useState("0");
-    const [output, setOutput] = useState("");
-    const [calculatorData, setCalculatorData] = useState("");
+    const [display, setDisplay] = useState("0");
+    const [equation, setEquation] = useState("");
 
-    const handleNumbers = (value) => {
-        if (!calculatorData.length) {
-            setInput(`${value}`);
-            setCalculatorData(`${value}`);
-        } else {
-            if (value === 0 && (calculatorData === "0" || input === "0")) {
-                setCalculatorData(`${calculatorData}`);
+    const numInput = (value) => {
+        if (equation.match(/[0-9\.]$/) && !equation.includes("=")) {
+            if (equation.match(/[+\-*\/]/) == null) {
+                let val = equation + value;
+                setDisplay(val);
+                setEquation(val);
             } else {
-                const lastChat = calculatorData.charAt(
-                    calculatorData.length - 1
-                );
-                const isLastChatOperator =
-                    lastChat === "*" || operators.includes(lastChat);
-
-                setInput(isLastChatOperator ? `${value}` : `${input}${value}`);
-                setCalculatorData(`${calculatorData}${value}`);
+                setDisplay(display + value);
+                setEquation(equation + value);
             }
-        }
-
-        if (calculatorData.includes("=")) {
-            console.log(input);
-            console.log(output);
-            console.log(calculatorData);
-            setCalculatorData(value);
-            setInput(value);
+        } else if (equation.match(/[+\-*\/]$/)) {
+            let val = equation + value;
+            setDisplay(value);
+            setEquation(val);
+        } else if (
+            (display === "0" && value !== "0") ||
+            equation.includes("=")
+        ) {
+            setDisplay(value);
+            setEquation(value);
         }
     };
 
-    const dotOperator = () => {
-        const lastChat = calculatorData.charAt(calculatorData.length - 1);
-        if (!calculatorData.length) {
-            setInput("0.");
-            setCalculatorData("0.");
-        } else {
-            if (lastChat === "*" || operators.includes(lastChat)) {
-                setInput("0.");
-                setCalculatorData(`${calculatorData} 0.`);
-            } else {
-                setInput(
-                    lastChat === "." || input.includes(".")
-                        ? `${input}`
-                        : `${input}.`
-                );
-                const formattedValue =
-                    lastChat === "." || input.includes(".")
-                        ? `${calculatorData}`
-                        : `${calculatorData}.`;
-                setCalculatorData(formattedValue);
-            }
+    const dotOperator = (value) => {
+        if (equation == "" || equation.includes("=")) {
+            let val = "0.";
+
+            setDisplay(val);
+            setEquation(val);
+        } else if (equation.match(/[+\-*\/]$/)) {
+            let val = "0.";
+
+            setDisplay(val);
+            setEquation(equation + val);
+        } else if (!display.includes(".")) {
+            setDisplay(display + value);
+            setEquation(equation + value);
         }
     };
 
     const handleOperators = (value) => {
-        if (calculatorData.length) {
-            setInput(`${value}`);
-            const beforeLastChat = calculatorData.charAt(
-                calculatorData.length - 2
-            );
+        if (equation.includes("=")) {
+            let val = display;
+            val += value;
+            setDisplay(value);
 
-            const beforeLastChatIsOperator =
-                operators.includes(beforeLastChat) || beforeLastChat === "*";
+            setEquation(val);
+        } else {
+            if (equation != "" && equation.match(/[*\-\/+]$/) == null) {
+                let val = equation;
+                val += value;
+                setDisplay(value);
 
-            const lastChat = calculatorData.charAt(calculatorData.length - 1);
+                setEquation(val);
+            } else if (equation.match(/[*\-\/+]$/) != null) {
+                let val = equation;
+                val = val.substring(0, val.length - 1);
+                val += value;
 
-            const lastChatIsOperator =
-                operators.includes(lastChat) || lastChat === "*";
-
-            const validOp = value === "x" ? "*" : value;
-            if (
-                (lastChatIsOperator && value !== "-") ||
-                (beforeLastChatIsOperator && lastChatIsOperator)
-            ) {
-                if (beforeLastChatIsOperator) {
-                    const updatedValue = `${calculatorData.substring(
-                        0,
-                        calculatorData.length - 2
-                    )}${value}`;
-                    setCalculatorData(updatedValue);
-                } else {
-                    setCalculatorData(
-                        `${calculatorData.substring(
-                            0,
-                            calculatorData.length - 1
-                        )}${validOp}`
-                    );
-                }
-            } else {
-                setCalculatorData(`${calculatorData}${validOp}`);
+                setEquation(val);
             }
         }
     };
@@ -106,13 +77,13 @@ function App() {
 
         switch (value) {
             case "=":
-                handleSubmit(value);
+                calculate(value);
                 break;
             case "AC":
                 handleClear();
                 break;
             case number:
-                handleNumbers(value);
+                numInput(value);
                 break;
             case ".":
                 dotOperator(value);
@@ -125,35 +96,42 @@ function App() {
         }
     };
 
-    const handleSubmit = (value) => {
-        const total = eval(calculatorData);
-        setInput(total);
-        setOutput(`${total} = ${total}`);
-        setCalculatorData((pre) => pre + "=" + total);
+    const calculate = () => {
+        if (equation.includes("=")) {
+            // let val = `${display} = ${display}`;
+            // setEquation(val);
+            setEquation(equation);
+            setDisplay(display);
+        } else if (
+            equation != "" &&
+            equation.match(/[+\-*\/]/) != null &&
+            equation.match(/[+\-*\/]$/) == null
+        ) {
+            let result = Number.isInteger(eval(equation))
+                ? eval(equation)
+                : parseFloat(eval(equation).toFixed(5));
+            let val = equation;
+            val += ` = ${result}`;
+
+            setDisplay(result);
+            setEquation(val);
+        }
     };
 
     const handleClear = () => {
-        setInput("0");
-        setCalculatorData("");
+        setDisplay("0");
+        setEquation("");
     };
-
-    const handleOutput = () => {
-        setOutput(calculatorData);
-    };
-
-    useEffect(() => {
-        handleOutput();
-    }, [calculatorData]);
 
     return (
         <div className="pt-[100px] flex justify-center items-center font-mono ">
             <div className="grid grid-cols-4 grid-rows-6 border-2 border-solid border-[#47476b] px-[5px] py-[5px] bg-black">
-                <div className="bg-black col-span-full text-right text-[20px]">
-                    <div className="text-[yellow] w-full px-[20px] py-[5px] text-right bg-black">
-                        {output}
+                <div className="bg-black col-span-full text-right text-[20px] h-[86px] relative">
+                    <div className="text-[yellow] w-full px-[20px] py-[5px] my-[2px] text-right bg-black">
+                        {equation}
                     </div>
-                    <div className="px-[20px] py-[5px] text-[white]">
-                        {input}
+                    <div className="px-[20px] py-[5px] my-[2px] text-[white] absolute right-0 bottom-0">
+                        {display}
                     </div>
                 </div>
                 <div
@@ -169,25 +147,25 @@ function App() {
                     /
                 </div>
                 <div
-                    onClick={() => handleInput("x")}
+                    onClick={() => handleInput("*")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[gray] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     x
                 </div>
                 <div
-                    onClick={() => handleInput(7)}
+                    onClick={() => handleInput("7")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     7
                 </div>
                 <div
-                    onClick={() => handleInput(8)}
+                    onClick={() => handleInput("8")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     8
                 </div>
                 <div
-                    onClick={() => handleInput(9)}
+                    onClick={() => handleInput("9")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     9
@@ -199,19 +177,19 @@ function App() {
                     -
                 </div>
                 <div
-                    onClick={() => handleInput(4)}
+                    onClick={() => handleInput("4")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     4
                 </div>
                 <div
-                    onClick={() => handleInput(5)}
+                    onClick={() => handleInput("5")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     5
                 </div>
                 <div
-                    onClick={() => handleInput(6)}
+                    onClick={() => handleInput("6")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     6
@@ -223,31 +201,31 @@ function App() {
                     +
                 </div>
                 <div
-                    onClick={() => handleInput(1)}
+                    onClick={() => handleInput("1")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     1
                 </div>
                 <div
-                    onClick={() => handleInput(2)}
+                    onClick={() => handleInput("2")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     2
                 </div>
                 <div
-                    onClick={() => handleInput(3)}
+                    onClick={() => handleInput("3")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px]"
                 >
                     3
                 </div>
                 <div
-                    onClick={handleSubmit}
+                    onClick={calculate}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#004466] color text-white border border-solid border-black cursor-pointer text-[20px] row-span-2"
                 >
                     =
                 </div>
                 <div
-                    onClick={() => handleInput(0)}
+                    onClick={() => handleInput("0")}
                     className="flex justify-center items-center py-[20px] px-[40px] bg-[#4d4d4d] color text-white border border-solid border-black cursor-pointer text-[20px] col-span-2"
                 >
                     0
